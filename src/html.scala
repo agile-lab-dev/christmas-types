@@ -2,12 +2,12 @@ package html
 
 object Html {
   
-  val table = Tag("table")
-  val thead = Tag("thead")
-  val tbody = Tag("tbody")
-  val tr = Tag("tr")
-  val td = Tag("td")
-  val th = Tag("th")
+  val table = Tag[thead.type with tbody.type]("table")
+  val thead = Tag[tr.type]("thead")
+  val tbody = Tag[tr.type]("tbody")
+  val tr = Tag[td.type with th.type]("tr")
+  val td = Tag[Any]("td")
+  val th = Tag[Any]("th")
 
   val myTable = table(
     thead(
@@ -25,31 +25,25 @@ object Html {
     )
   )
 
-  val shouldNotCompile = table(
-    thead(
-      th("Misplaced <th/>")
-    )
-  )
-
   def main(args: Array[String]): Unit = println(myTable)
 
 }
 object Node {
-  implicit def toText(str: String): Node = Text(str)
+  implicit def toText(str: String): Node[Any] = Text(str)
 }
 
-sealed trait Node
+sealed trait Node[C]
 
-case class Element(tag: Tag, content: Seq[Node]) extends Node {
+case class Element[C](tag: Tag[_], content: Seq[Node[_]]) extends Node[C] {
   override def toString(): String =
     s"<${tag.id}>${content.mkString}</${tag.id}>"
 }
 
-case class Text(str: String) extends Node {
+case class Text(str: String) extends Node[Any] {
   override def toString(): String = str
 }
 
-case class Tag(id: String) {
-  def apply(nodes: Node*): Node = Element(this, nodes)
+case class Tag[C](id: String) {
+  def apply(nodes: Node[_ >: C]*): Node[this.type] = Element[this.type](this, nodes)
 }
 
